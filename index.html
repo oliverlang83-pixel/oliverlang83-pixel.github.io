@@ -1,0 +1,836 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Persönliche Homepage von Oliver Lang — im Aufbau.">
+<title>Oliver Lang — Homepage</title>
+</head>
+<body>
+<style>
+  :root {
+    --ground: #05070f;
+    --ground-2: #0a0e1c;
+    --ink: #e8ecf8;
+    --muted: #8a93ad;
+    --line: rgba(138, 147, 173, 0.18);
+    --teal: #4fd8c4;
+    --violet: #7c6cff;
+    --magenta: #ff6ea9;
+    --glass: rgba(10, 14, 28, 0.55);
+    --display: "Avenir Next", "Avenir", Futura, "Helvetica Neue", "Segoe UI", system-ui, sans-serif;
+    --body: system-ui, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--body);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  ::selection { background: rgba(124, 108, 255, 0.45); color: #fff; }
+
+  /* ---------- 3D canvas ---------- */
+  #stage {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    z-index: 0;
+    cursor: grab;
+  }
+  #stage.dragging { cursor: grabbing; }
+
+  .veil {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background:
+      radial-gradient(120% 90% at 50% 110%, rgba(5, 7, 15, 0.9) 0%, rgba(5, 7, 15, 0) 45%),
+      radial-gradient(140% 100% at 50% -20%, rgba(5, 7, 15, 0.7) 0%, rgba(5, 7, 15, 0) 40%);
+  }
+
+  /* ---------- shell ---------- */
+  .shell { position: relative; z-index: 2; }
+
+  header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.9rem clamp(1.2rem, 4vw, 3rem);
+    background: linear-gradient(to bottom, rgba(5,7,15,0.85), rgba(5,7,15,0));
+  }
+
+  .wordmark {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .wordmark b { color: var(--teal); font-weight: 700; }
+
+  nav { display: flex; gap: clamp(0.8rem, 2.5vw, 1.8rem); }
+  nav a {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 0.3rem 0.1rem;
+    border-bottom: 1px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  nav a:hover, nav a:focus-visible { color: var(--ink); border-bottom-color: var(--teal); }
+  nav a:focus-visible { outline: 2px solid var(--violet); outline-offset: 3px; }
+
+  /* ---------- hero ---------- */
+  .hero {
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 0 clamp(1.2rem, 4vw, 3rem) clamp(2.5rem, 6vh, 5rem);
+    pointer-events: none;
+  }
+  .hero > * { pointer-events: auto; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--teal);
+    margin-bottom: 1.1rem;
+  }
+
+  h1 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(2.6rem, 7.5vw, 5.8rem);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    max-width: 14ch;
+  }
+  h1 .grad {
+    background: linear-gradient(100deg, var(--teal), var(--violet) 55%, var(--magenta));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .hero p.lede {
+    margin-top: 1.2rem;
+    max-width: 44ch;
+    color: var(--muted);
+    font-size: clamp(1rem, 1.4vw, 1.15rem);
+  }
+
+  .hero-row {
+    margin-top: 2rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .cta {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ground);
+    background: linear-gradient(100deg, var(--teal), var(--violet));
+    text-decoration: none;
+    padding: 0.85rem 1.6rem;
+    border-radius: 999px;
+    transition: filter 0.2s, transform 0.2s;
+  }
+  .cta:hover { filter: brightness(1.15); transform: translateY(-1px); }
+  .cta:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+
+  .shapes {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .shapes button {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--glass);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 0.5rem 0.95rem;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .shapes button:hover { color: var(--ink); }
+  .shapes button:focus-visible { outline: 2px solid var(--violet); outline-offset: 2px; }
+  .shapes button[aria-pressed="true"] {
+    color: var(--ink);
+    border-color: var(--teal);
+    box-shadow: 0 0 18px rgba(79, 216, 196, 0.25);
+  }
+
+  .hint {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(138, 147, 173, 0.6);
+    margin-top: 1.4rem;
+  }
+
+  /* ---------- content sections ---------- */
+  main.page { display: block; }
+
+  .section {
+    position: relative;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: clamp(4rem, 10vh, 7rem) clamp(1.2rem, 4vw, 2rem);
+  }
+  .section + .section { border-top: 1px solid var(--line); }
+
+  .section .eyebrow { color: var(--violet); }
+
+  h2 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(1.7rem, 3.5vw, 2.4rem);
+    letter-spacing: -0.015em;
+    line-height: 1.15;
+    text-wrap: balance;
+    margin-bottom: 1rem;
+  }
+
+  .section p { color: var(--muted); max-width: 62ch; }
+  .section p + p { margin-top: 0.9rem; }
+
+  .placeholder {
+    margin-top: 1.6rem;
+    border: 1px dashed rgba(138, 147, 173, 0.35);
+    border-radius: 12px;
+    padding: 1.4rem 1.5rem;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    color: rgba(138, 147, 173, 0.75);
+    background: rgba(10, 14, 28, 0.4);
+  }
+
+  .cards {
+    margin-top: 2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+  .card {
+    background: var(--glass);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 1.5rem 1.4rem;
+    backdrop-filter: blur(10px);
+    transition: transform 0.25s, border-color 0.25s;
+  }
+  .card:hover { transform: translateY(-4px); border-color: rgba(79, 216, 196, 0.5); }
+  .card .num {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    color: var(--teal);
+  }
+  .card h3 {
+    font-family: var(--display);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0.6rem 0 0.4rem;
+  }
+  .card p { font-size: 0.88rem; color: var(--muted); }
+
+  .contact-link {
+    display: inline-block;
+    margin-top: 1.4rem;
+    font-family: var(--mono);
+    font-size: 0.95rem;
+    letter-spacing: 0.06em;
+    color: var(--teal);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(79, 216, 196, 0.4);
+    padding-bottom: 2px;
+  }
+  .contact-link:hover { color: var(--ink); border-bottom-color: var(--ink); }
+
+  /* ---------- reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.7s ease, transform 0.7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+  }
+
+  /* ---------- footer ---------- */
+  footer {
+    border-top: 1px solid var(--line);
+    padding: 2.2rem clamp(1.2rem, 4vw, 3rem) 2.8rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    background: rgba(5, 7, 15, 0.75);
+    backdrop-filter: blur(8px);
+  }
+  footer small {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+  }
+  .legal-links { display: flex; gap: 1.4rem; }
+  .legal-links a {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-decoration: none;
+  }
+  .legal-links a:hover { color: var(--ink); }
+
+  /* ---------- legal pages ---------- */
+  .legal-page {
+    display: none;
+    position: relative;
+    z-index: 2;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: clamp(6rem, 14vh, 9rem) clamp(1.2rem, 4vw, 2rem) 5rem;
+    min-height: 100svh;
+  }
+  .legal-page.active { display: block; }
+  body.legal-open main.page, body.legal-open .hero { display: none; }
+
+  .legal-page h2 { margin-bottom: 1.6rem; }
+  .legal-page h3 {
+    font-family: var(--display);
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin: 2rem 0 0.5rem;
+  }
+  .legal-page p, .legal-page li { color: var(--muted); font-size: 0.95rem; }
+  .legal-page ul { padding-left: 1.2rem; margin-top: 0.5rem; }
+  .legal-page .todo {
+    background: rgba(255, 110, 169, 0.08);
+    border: 1px dashed rgba(255, 110, 169, 0.45);
+    border-radius: 10px;
+    padding: 0.9rem 1.1rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    color: var(--magenta);
+    margin-bottom: 2rem;
+  }
+  .legal-page mark {
+    background: rgba(124, 108, 255, 0.25);
+    color: var(--ink);
+    border-radius: 4px;
+    padding: 0 0.3em;
+  }
+  .back-link {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--teal);
+    text-decoration: none;
+    margin-bottom: 2.2rem;
+  }
+  .back-link:hover { color: var(--ink); }
+
+  @media (max-width: 560px) {
+    nav a:nth-child(n+4) { display: none; }
+  }
+</style>
+
+<canvas id="stage" aria-hidden="true"></canvas>
+<div class="veil" aria-hidden="true"></div>
+
+<div class="shell">
+  <header>
+    <a class="wordmark" href="#top">OLIVER<b>LANG</b> · GERÜST V0.1</a>
+    <nav aria-label="Hauptnavigation">
+      <a href="#ueber">Über</a>
+      <a href="#projekte">Projekte</a>
+      <a href="#kontakt">Kontakt</a>
+      <a href="#impressum">Impressum</a>
+    </nav>
+  </header>
+
+  <section class="hero" id="top">
+    <p class="eyebrow">Persönliche Homepage — im Aufbau</p>
+    <h1>Die Bühne steht.<br><span class="grad">Der Inhalt folgt.</span></h1>
+    <p class="lede">Das hier ist das Gerüst: Navigation, Sektionen, Impressum und eine
+      3D-Partikelwelt aus 9.000 Punkten. Ziehen mit der Maus dreht die Szene —
+      die Form wechselt von selbst oder per Klick.</p>
+    <div class="hero-row">
+      <a class="cta" href="#ueber">Mehr erfahren</a>
+      <div class="shapes" role="group" aria-label="3D-Form wählen">
+        <button type="button" data-shape="0" aria-pressed="true">Torus-Knoten</button>
+        <button type="button" data-shape="1" aria-pressed="false">Galaxie</button>
+        <button type="button" data-shape="2" aria-pressed="false">Welle</button>
+        <button type="button" data-shape="3" aria-pressed="false">Sphäre</button>
+      </div>
+    </div>
+    <p class="hint">↓ Scrollen · Ziehen zum Drehen</p>
+  </section>
+
+  <main class="page">
+    <section class="section reveal" id="ueber">
+      <p class="eyebrow">01 — Über</p>
+      <h2>Wer hier schreibt</h2>
+      <p>Dieser Abschnitt bekommt später eine kurze Vorstellung: wer ich bin,
+        was ich mache und warum es diese Seite gibt.</p>
+      <div class="placeholder">[ PLATZHALTER — TEXT „ÜBER MICH“ FOLGT ]</div>
+    </section>
+
+    <section class="section reveal" id="projekte">
+      <p class="eyebrow">02 — Projekte</p>
+      <h2>Woran gerade gebaut wird</h2>
+      <p>Hier entsteht eine Übersicht der Projekte. Die Karten sind Platzhalter
+        und warten auf echte Inhalte.</p>
+      <div class="cards">
+        <article class="card">
+          <span class="num">P—01</span>
+          <h3>Projekt Eins</h3>
+          <p>Beschreibung folgt. Ein, zwei Sätze zum Projekt und ein Link.</p>
+        </article>
+        <article class="card">
+          <span class="num">P—02</span>
+          <h3>Projekt Zwei</h3>
+          <p>Beschreibung folgt. Ein, zwei Sätze zum Projekt und ein Link.</p>
+        </article>
+        <article class="card">
+          <span class="num">P—03</span>
+          <h3>Projekt Drei</h3>
+          <p>Beschreibung folgt. Ein, zwei Sätze zum Projekt und ein Link.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section reveal" id="kontakt">
+      <p class="eyebrow">03 — Kontakt</p>
+      <h2>Sag Hallo</h2>
+      <p>Der schnellste Weg ist eine E-Mail. Ein Kontaktformular kann später
+        ergänzt werden, wenn die Inhalte stehen.</p>
+      <a class="contact-link" href="mailto:o.liverlang@web.de">o.liverlang@web.de</a>
+    </section>
+  </main>
+
+  <section class="legal-page" id="page-impressum" aria-labelledby="impressum-h">
+    <a class="back-link" href="#top">← Zurück zur Startseite</a>
+    <h2 id="impressum-h">Impressum</h2>
+    <p class="todo">[ ENTWURF — MARKIERTE ANGABEN VOR VERÖFFENTLICHUNG PRÜFEN UND VERVOLLSTÄNDIGEN ]</p>
+
+    <h3>Angaben gemäß § 5 DDG</h3>
+    <p>Oliver Lang<br>
+      <mark>[Straße und Hausnummer]</mark><br>
+      <mark>[PLZ] [Ort]</mark><br>
+      Deutschland</p>
+
+    <h3>Kontakt</h3>
+    <p>E-Mail: o.liverlang@web.de<br>
+      Telefon: <mark>[optional]</mark></p>
+
+    <h3>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h3>
+    <p>Oliver Lang, Anschrift wie oben.</p>
+
+    <h3>Haftung für Inhalte</h3>
+    <p>Die Inhalte dieser Seite wurden mit größter Sorgfalt erstellt. Für die
+      Richtigkeit, Vollständigkeit und Aktualität der Inhalte wird jedoch keine
+      Gewähr übernommen. Als Diensteanbieter bin ich für eigene Inhalte auf
+      diesen Seiten nach den allgemeinen Gesetzen verantwortlich.</p>
+
+    <h3>Haftung für Links</h3>
+    <p>Diese Seite enthält gegebenenfalls Links zu externen Websites Dritter,
+      auf deren Inhalte kein Einfluss besteht. Für die Inhalte der verlinkten
+      Seiten ist stets der jeweilige Anbieter verantwortlich. Zum Zeitpunkt der
+      Verlinkung waren keine Rechtsverstöße erkennbar.</p>
+
+    <h3>Urheberrecht</h3>
+    <p>Die durch den Seitenbetreiber erstellten Inhalte und Werke auf diesen
+      Seiten unterliegen dem deutschen Urheberrecht. Vervielfältigung,
+      Bearbeitung und Verbreitung außerhalb der Grenzen des Urheberrechts
+      bedürfen der schriftlichen Zustimmung.</p>
+  </section>
+
+  <section class="legal-page" id="page-datenschutz" aria-labelledby="datenschutz-h">
+    <a class="back-link" href="#top">← Zurück zur Startseite</a>
+    <h2 id="datenschutz-h">Datenschutzerklärung</h2>
+    <p class="todo">[ ENTWURF — VOR VERÖFFENTLICHUNG PRÜFEN, ERGÄNZEN UND AN DIE TATSÄCHLICHE NUTZUNG ANPASSEN ]</p>
+
+    <h3>1. Verantwortlicher</h3>
+    <p>Oliver Lang, <mark>[Anschrift wie im Impressum]</mark>, E-Mail:
+      o.liverlang@web.de</p>
+
+    <h3>2. Allgemeines zur Datenverarbeitung</h3>
+    <p>Diese Website ist ein statisches Angebot ohne Kontaktformulare,
+      Newsletter, Cookies zu Analysezwecken oder Tracking-Dienste.
+      Personenbezogene Daten werden nur verarbeitet, soweit dies technisch für
+      die Bereitstellung der Website erforderlich ist.</p>
+
+    <h3>3. Hosting und Server-Logdaten</h3>
+    <p>Beim Aufruf der Website verarbeitet der Hosting-Anbieter
+      (<mark>[Hosting-Anbieter, z. B. Vercel Inc., ggf. mit Hinweis auf
+      Drittlandübermittlung]</mark>) automatisch Informationen wie IP-Adresse,
+      Datum und Uhrzeit des Zugriffs, aufgerufene Seite und Browsertyp
+      (Server-Logfiles). Die Verarbeitung erfolgt auf Grundlage von
+      Art. 6 Abs. 1 lit. f DSGVO zum Zweck des sicheren und stabilen Betriebs
+      der Website.</p>
+
+    <h3>4. Kontaktaufnahme per E-Mail</h3>
+    <p>Bei einer Kontaktaufnahme per E-Mail werden die übermittelten Daten
+      (E-Mail-Adresse, Inhalt der Nachricht) zur Bearbeitung der Anfrage
+      gespeichert (Art. 6 Abs. 1 lit. b bzw. lit. f DSGVO). Diese Daten werden
+      nicht ohne Einwilligung weitergegeben.</p>
+
+    <h3>5. Ihre Rechte</h3>
+    <p>Sie haben gegenüber dem Verantwortlichen folgende Rechte hinsichtlich
+      der Sie betreffenden personenbezogenen Daten:</p>
+    <ul>
+      <li>Recht auf Auskunft (Art. 15 DSGVO)</li>
+      <li>Recht auf Berichtigung (Art. 16 DSGVO)</li>
+      <li>Recht auf Löschung (Art. 17 DSGVO)</li>
+      <li>Recht auf Einschränkung der Verarbeitung (Art. 18 DSGVO)</li>
+      <li>Recht auf Datenübertragbarkeit (Art. 20 DSGVO)</li>
+      <li>Widerspruchsrecht (Art. 21 DSGVO)</li>
+      <li>Beschwerderecht bei einer Datenschutz-Aufsichtsbehörde (Art. 77 DSGVO)</li>
+    </ul>
+
+    <h3>6. Stand</h3>
+    <p>Diese Datenschutzerklärung hat den Stand <mark>[Datum einsetzen]</mark>
+      und wird bei Änderungen der Website angepasst.</p>
+  </section>
+
+  <footer>
+    <small>© <span id="year">2026</span> Oliver Lang — Gerüst, Inhalte folgen.</small>
+    <div class="legal-links">
+      <a href="#impressum">Impressum</a>
+      <a href="#datenschutz">Datenschutz</a>
+    </div>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ================= hash router for legal pages ================= */
+  var pages = { impressum: "page-impressum", datenschutz: "page-datenschutz" };
+
+  function route() {
+    var hash = location.hash.replace("#", "");
+    var pageId = pages[hash];
+    document.body.classList.toggle("legal-open", !!pageId);
+    for (var key in pages) {
+      var el = document.getElementById(pages[key]);
+      if (el) el.classList.toggle("active", pages[key] === pageId);
+    }
+    if (pageId) window.scrollTo(0, 0);
+  }
+  window.addEventListener("hashchange", route);
+  route();
+
+  document.getElementById("year").textContent = new Date().getFullYear();
+
+  /* ================= scroll reveal ================= */
+  var reveals = document.querySelectorAll(".reveal");
+  if ("IntersectionObserver" in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.15 });
+    reveals.forEach(function (el) { io.observe(el); });
+  } else {
+    reveals.forEach(function (el) { el.classList.add("in"); });
+  }
+
+  /* ================= WebGL particle stage ================= */
+  var canvas = document.getElementById("stage");
+  var gl = canvas.getContext("webgl", { antialias: false, alpha: true, powerPreference: "high-performance" });
+  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  if (!gl) { canvas.style.display = "none"; return; }
+
+  var COUNT = 9000;
+
+  var vsSource = [
+    "attribute vec3 aPosA;",
+    "attribute vec3 aPosB;",
+    "attribute float aPhase;",
+    "attribute float aTint;",
+    "uniform float uMix;",
+    "uniform float uTime;",
+    "uniform vec2 uRot;",
+    "uniform float uAspect;",
+    "uniform float uPointScale;",
+    "varying float vDepth;",
+    "varying float vTint;",
+    "void main() {",
+    "  float m = uMix * uMix * (3.0 - 2.0 * uMix);",
+    "  vec3 p = mix(aPosA, aPosB, m);",
+    "  p += 0.025 * vec3(sin(uTime * 0.9 + aPhase), cos(uTime * 1.1 + aPhase * 1.7), sin(uTime * 0.7 + aPhase * 2.3));",
+    "  float cy = cos(uRot.x), sy = sin(uRot.x);",
+    "  p = vec3(cy * p.x + sy * p.z, p.y, -sy * p.x + cy * p.z);",
+    "  float cx = cos(uRot.y), sx = sin(uRot.y);",
+    "  p = vec3(p.x, cx * p.y - sx * p.z, sx * p.y + cx * p.z);",
+    "  p.z += 2.6;",
+    "  float persp = 1.0 / max(p.z, 0.1);",
+    "  gl_Position = vec4(p.x * persp / uAspect, p.y * persp, p.z * 0.1, 1.0);",
+    "  gl_PointSize = uPointScale * persp;",
+    "  vDepth = clamp(1.6 - p.z * 0.38, 0.12, 1.0);",
+    "  vTint = aTint;",
+    "}"
+  ].join("\n");
+
+  var fsSource = [
+    "precision mediump float;",
+    "varying float vDepth;",
+    "varying float vTint;",
+    "void main() {",
+    "  vec2 d = gl_PointCoord - vec2(0.5);",
+    "  float r = length(d);",
+    "  if (r > 0.5) discard;",
+    "  float glow = smoothstep(0.5, 0.05, r);",
+    "  vec3 teal = vec3(0.31, 0.85, 0.77);",
+    "  vec3 violet = vec3(0.49, 0.42, 1.0);",
+    "  vec3 magenta = vec3(1.0, 0.43, 0.66);",
+    "  vec3 col = vTint < 0.5 ? mix(teal, violet, vTint * 2.0) : mix(violet, magenta, vTint * 2.0 - 1.0);",
+    "  gl_FragColor = vec4(col * glow * vDepth * 1.25, glow * vDepth);",
+    "}"
+  ].join("\n");
+
+  function compile(type, src) {
+    var s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    return s;
+  }
+
+  var prog = gl.createProgram();
+  gl.attachShader(prog, compile(gl.VERTEX_SHADER, vsSource));
+  gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, fsSource));
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) { canvas.style.display = "none"; return; }
+  gl.useProgram(prog);
+
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE); // additive glow
+  gl.disable(gl.DEPTH_TEST);
+
+  /* ---------- shape generators, all roughly unit-sized ---------- */
+  function torusKnot(i, n, out, o) {
+    var t = (i / n) * Math.PI * 2 * 3;
+    var p = 2, q = 3;
+    var r = 0.42 + 0.18 * Math.cos(q * t / p);
+    var x = r * Math.cos(t);
+    var y = r * Math.sin(t);
+    var z = 0.18 * Math.sin(q * t / p);
+    var jitter = 0.05;
+    out[o] = x * 1.6 + (Math.random() - 0.5) * jitter;
+    out[o + 1] = y * 1.6 + (Math.random() - 0.5) * jitter;
+    out[o + 2] = z * 1.6 + (Math.random() - 0.5) * jitter;
+  }
+  function galaxy(i, n, out, o) {
+    var arm = i % 3;
+    var t = Math.pow(Math.random(), 0.6);
+    var radius = t * 1.15;
+    var angle = t * 5.5 + arm * (Math.PI * 2 / 3);
+    var spread = (1 - t) * 0.22 + 0.03;
+    out[o] = Math.cos(angle) * radius + (Math.random() - 0.5) * spread * 2.2;
+    out[o + 1] = (Math.random() - 0.5) * spread * 1.4;
+    out[o + 2] = Math.sin(angle) * radius + (Math.random() - 0.5) * spread * 2.2;
+  }
+  function wave(i, n, out, o) {
+    var side = Math.ceil(Math.sqrt(n));
+    var gx = (i % side) / side - 0.5;
+    var gz = Math.floor(i / side) / side - 0.5;
+    out[o] = gx * 2.4;
+    out[o + 1] = 0.28 * Math.sin(gx * 9.0) * Math.cos(gz * 9.0);
+    out[o + 2] = gz * 2.4;
+  }
+  function sphere(i, n, out, o) {
+    var golden = Math.PI * (3 - Math.sqrt(5));
+    var y = 1 - (i / (n - 1)) * 2;
+    var radius = Math.sqrt(1 - y * y);
+    var theta = golden * i;
+    var shell = 0.92 + Math.random() * 0.1;
+    out[o] = Math.cos(theta) * radius * shell;
+    out[o + 1] = y * shell;
+    out[o + 2] = Math.sin(theta) * radius * shell;
+  }
+  var generators = [torusKnot, galaxy, wave, sphere];
+
+  function buildShape(gen) {
+    var arr = new Float32Array(COUNT * 3);
+    for (var i = 0; i < COUNT; i++) gen(i, COUNT, arr, i * 3);
+    return arr;
+  }
+
+  var posA = buildShape(generators[0]);
+  var posB = buildShape(generators[0]);
+  var phases = new Float32Array(COUNT);
+  var tints = new Float32Array(COUNT);
+  for (var i = 0; i < COUNT; i++) {
+    phases[i] = Math.random() * Math.PI * 2;
+    tints[i] = i / COUNT;
+  }
+
+  function makeBuffer(data, loc, size, dynamic) {
+    var buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, data, dynamic ? gl.DYNAMIC_DRAW : gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 0, 0);
+    return buf;
+  }
+
+  var locA = gl.getAttribLocation(prog, "aPosA");
+  var locB = gl.getAttribLocation(prog, "aPosB");
+  var locPhase = gl.getAttribLocation(prog, "aPhase");
+  var locTint = gl.getAttribLocation(prog, "aTint");
+  var bufA = makeBuffer(posA, locA, 3, true);
+  var bufB = makeBuffer(posB, locB, 3, true);
+  makeBuffer(phases, locPhase, 1, false);
+  makeBuffer(tints, locTint, 1, false);
+
+  var uMix = gl.getUniformLocation(prog, "uMix");
+  var uTime = gl.getUniformLocation(prog, "uTime");
+  var uRot = gl.getUniformLocation(prog, "uRot");
+  var uAspect = gl.getUniformLocation(prog, "uAspect");
+  var uPointScale = gl.getUniformLocation(prog, "uPointScale");
+
+  /* ---------- state ---------- */
+  var mixVal = 1;
+  var currentShape = 0;
+  var rotX = 0.45, rotTilt = 0.25;
+  var velX = 0.0016;
+  var dragging = false, lastX = 0, lastY = 0;
+  var lastInteraction = 0;
+
+  function setShape(idx) {
+    if (idx === currentShape && mixVal >= 1) return;
+    // freeze current interpolated positions into A
+    var m = mixVal * mixVal * (3 - 2 * mixVal);
+    for (var i = 0; i < posA.length; i++) posA[i] = posA[i] + (posB[i] - posA[i]) * m;
+    posB = buildShape(generators[idx]);
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufA);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, posA);
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufB);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, posB);
+    mixVal = 0;
+    currentShape = idx;
+    shapeButtons.forEach(function (b) {
+      b.setAttribute("aria-pressed", String(Number(b.dataset.shape) === idx));
+    });
+  }
+
+  var shapeButtons = Array.prototype.slice.call(document.querySelectorAll(".shapes button"));
+  shapeButtons.forEach(function (b) {
+    b.addEventListener("click", function () {
+      lastInteraction = performance.now();
+      setShape(Number(b.dataset.shape));
+    });
+  });
+
+  /* auto-cycle unless the user recently chose a shape */
+  if (!reduceMotion) {
+    setInterval(function () {
+      if (document.body.classList.contains("legal-open")) return;
+      if (performance.now() - lastInteraction < 14000) return;
+      setShape((currentShape + 1) % generators.length);
+    }, 9000);
+  }
+
+  /* ---------- pointer ---------- */
+  canvas.addEventListener("pointerdown", function (e) {
+    dragging = true;
+    lastX = e.clientX; lastY = e.clientY;
+    canvas.classList.add("dragging");
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener("pointermove", function (e) {
+    if (!dragging) return;
+    var dx = e.clientX - lastX, dy = e.clientY - lastY;
+    lastX = e.clientX; lastY = e.clientY;
+    rotX += dx * 0.005;
+    rotTilt = Math.max(-1.2, Math.min(1.2, rotTilt + dy * 0.004));
+    velX = dx * 0.0004;
+    lastInteraction = performance.now();
+  });
+  function endDrag() { dragging = false; canvas.classList.remove("dragging"); }
+  canvas.addEventListener("pointerup", endDrag);
+  canvas.addEventListener("pointercancel", endDrag);
+
+  /* ---------- resize ---------- */
+  function resize() {
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.floor(canvas.clientWidth * dpr);
+    canvas.height = Math.floor(canvas.clientHeight * dpr);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.uniform1f(uAspect, canvas.width / canvas.height);
+    gl.uniform1f(uPointScale, 5.4 * dpr);
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  /* ---------- loop ---------- */
+  var start = performance.now();
+  function frame(now) {
+    var t = (now - start) / 1000;
+    if (!dragging) {
+      rotX += velX;
+      velX += (0.0016 - velX) * 0.01; // ease back to idle spin
+    }
+    if (mixVal < 1) mixVal = Math.min(1, mixVal + 0.012);
+
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.uniform1f(uMix, mixVal);
+    gl.uniform1f(uTime, reduceMotion ? 0 : t);
+    gl.uniform2f(uRot, rotX, rotTilt);
+    gl.drawArrays(gl.POINTS, 0, COUNT);
+
+    if (!reduceMotion) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
